@@ -927,74 +927,38 @@ ul {
 
 /* ---------- 响应式 ---------- */
 @media (max-width: 960px) {
-  .quiz-layout {
-    grid-template-columns: 1fr !important;
-  }
-
-  /* 为固定在底部的操作栏留出空白 */
+  /* 让最外层变成 flex 纵向布局 */
   .view-quiz {
-    padding-bottom: 90px !important;
-  }
-
-  /* 底部操作栏固定 */
-  .quiz-actions {
-    position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    z-index: 9999 !important;
-    margin: 0 !important;
-    padding: 12px 16px calc(12px + env(safe-area-inset-bottom)) !important;
-    background: #ffffff !important; /* 使用纯色避免部分手机渲染半透明出错 */
-    border-top: 1px solid var(--border) !important;
-    border-radius: 0 !important;
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05) !important;
-    display: flex !important;
-    flex-wrap: nowrap !important;
-    align-items: center !important;
-  }
-
-  /* 在手机端，将按钮均分空间，并隐藏冗余的"返回首页"以免太挤 */
-  .quiz-actions .btn-primary,
-  .quiz-actions .btn-secondary,
-  .quiz-actions .btn-finish {
-    flex: 1;
-    margin: 0 4px !important;
-    padding: 10px 0 !important;
-    text-align: center;
-    font-size: 14px !important;
-  }
-  .quiz-actions .btn-ghost {
-    display: none !important; 
-  }
-
-  /* 答题卡变为单行横向滑动 */
-  .answer-sheet {
-    position: static !important;
-    order: 2 !important;
-    padding: 16px !important;
-    margin-top: 10px !important;
-  }
-
-  .sheet-grid {
-    display: flex !important;
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    gap: 8px !important;
-    max-height: none !important;
-    padding-bottom: 8px !important;
-    -webkit-overflow-scrolling: touch; /* 苹果端滑动更丝滑 */
-  }
-
-  /* 固定题号大小，避免被压缩 */
-  .sheet-cell {
-    flex: 0 0 44px !important;
-    height: 44px !important;
-    aspect-ratio: auto !important;
+    display: flex;
+    flex-direction: column;
   }
   
-  .sheet-grid::-webkit-scrollbar {
-    display: none !important;
+  /* 拆解掉 wrapper 的盒子限制，让里面的题目和答题卡直接参与外层 flex 排序 */
+  .quiz-layout {
+    display: contents; 
+  }
+  
+  /* 题目及选项排第一 */
+  .question-panel {
+    order: 1;
+  }
+  
+  /* 操作按钮排第二（紧挨着题目） */
+  .quiz-actions {
+    order: 2;
+    margin-top: 16px;
+    margin-bottom: 24px;
+  }
+  
+  /* 答题卡排第三（最底部） */
+  .answer-sheet {
+    order: 3;
+    position: static; /* 取消原本的 sticky 吸顶效果 */
+  }
+  
+  .sheet-grid {
+    max-height: none;
+    grid-template-columns: repeat(8, 1fr);
   }
 }
 
@@ -1028,6 +992,17 @@ ul {
   }
   .judge-options {
     flex-direction: column;
+  }
+  .sheet-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+  .quiz-actions {
+    flex-wrap: wrap;
+  }
+  .quiz-actions .btn-ghost {
+    margin-left: 0;
+    width: 100%;
+    text-align: center;
   }
   .score-num {
     font-size: 52px;
