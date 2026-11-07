@@ -928,58 +928,73 @@ ul {
 /* ---------- 响应式 ---------- */
 @media (max-width: 960px) {
   .quiz-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
   }
 
-  /* 1. 为固定在底部的操作栏留出空白，防止遮挡页面最后的内容 */
+  /* 为固定在底部的操作栏留出空白 */
   .view-quiz {
-    padding-bottom: 90px;
+    padding-bottom: 90px !important;
   }
 
-  /* 2. 核心优化：操作栏固定在屏幕底部 */
+  /* 底部操作栏固定 */
   .quiz-actions {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 100;
-    margin-top: 0;
-    padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); /* 适配 iPhone 底部安全区 */
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    border-top: 1px solid var(--border);
-    border-radius: 0;
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 9999 !important;
+    margin: 0 !important;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom)) !important;
+    background: #ffffff !important; /* 使用纯色避免部分手机渲染半透明出错 */
+    border-top: 1px solid var(--border) !important;
+    border-radius: 0 !important;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05) !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
   }
 
-  /* 3. 答题卡在手机端变为单行横向滚动 */
+  /* 在手机端，将按钮均分空间，并隐藏冗余的"返回首页"以免太挤 */
+  .quiz-actions .btn-primary,
+  .quiz-actions .btn-secondary,
+  .quiz-actions .btn-finish {
+    flex: 1;
+    margin: 0 4px !important;
+    padding: 10px 0 !important;
+    text-align: center;
+    font-size: 14px !important;
+  }
+  .quiz-actions .btn-ghost {
+    display: none !important; 
+  }
+
+  /* 答题卡变为单行横向滑动 */
   .answer-sheet {
-    position: static;
-    order: 2;
-    padding: 16px;
-    /* 调整边距，让答题卡和操作栏产生一些距离 */
-    margin-bottom: 8px; 
+    position: static !important;
+    order: 2 !important;
+    padding: 16px !important;
+    margin-top: 10px !important;
   }
 
   .sheet-grid {
-    display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    gap: 8px;
-    max-height: none;
-    padding-bottom: 6px; /* 防止滚动条遮挡按钮 */
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    gap: 8px !important;
+    max-height: none !important;
+    padding-bottom: 8px !important;
+    -webkit-overflow-scrolling: touch; /* 苹果端滑动更丝滑 */
   }
 
-  /* 固定每个题号的大小，不再按比例撑开 */
+  /* 固定题号大小，避免被压缩 */
   .sheet-cell {
-    flex: 0 0 42px;
-    height: 42px;
-    aspect-ratio: auto;
+    flex: 0 0 44px !important;
+    height: 44px !important;
+    aspect-ratio: auto !important;
   }
-
-  /* 隐藏滚动条让界面看起来更干净 */
+  
   .sheet-grid::-webkit-scrollbar {
-    display: none;
+    display: none !important;
   }
 }
 
@@ -1013,14 +1028,6 @@ ul {
   }
   .judge-options {
     flex-direction: column;
-  }
-  .quiz-actions {
-    flex-wrap: wrap;
-  }
-  /* 让返回首页按钮在手机上靠右显示 */
-  .quiz-actions .btn-ghost {
-    margin-left: auto;
-    text-align: center;
   }
   .score-num {
     font-size: 52px;
