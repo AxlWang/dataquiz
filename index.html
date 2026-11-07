@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DataQuiz · 智数刷题</title>
+  <link rel="stylesheet" href="./style.css" />
+  <!-- 防止 Vue 未挂载时模板闪烁 -->
+  <style>[v-cloak]{display:none;}</style>
+</head>
+<body>
+  <div id="app" v-cloak>
+
+    <!-- ==================== 顶部栏 ==================== -->
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-logo">DQ</span>
+        <div class="brand-text">
+          <span class="brand-name">DataQuiz</span>
+          <span class="brand-sub">智数刷题</span>
+        </div>
+      </div>
+
+      <!-- 题型切换 -->
+      <nav class="mode-nav" aria-label="题型切换">
+        <button
+          class="mode-btn"
+          :class="{ active: currentType === 'single-choice' }"
+          @click="switchType('single-choice')"
+        >单选题</button>
+        <button
+          class="mode-btn"
+          :class="{ active: currentType === 'multiple-choice' }"
+          @click="switchType('multiple-choice')"
+        >多选题</button>
+        <button
+          class="mode-btn"
+          :class="{ active: currentType === 'true-false' }"
+          @click="switchType('true-false')"
+        >判断题</button>
+        <button
+          class="mode-btn"
+          :class="{ active: currentType === 'short-answer' }"
+          @click="switchType('short-answer')"
+        >简答题</button>
+      </nav>
+
+      <div class="header-actions">
+        <span class="progress-info" v-if="view === 'quiz'">
+          第 {{ currentIndex + 1 }} / {{ currentList.length }} 题
+        </span>
+        <button class="btn-ghost" @click="resetAll" title="清空本地答题记录">
+          重置进度
+        </button>
+      </div>
+    </header>
+
+    <!-- ==================== 主内容区 ==================== -->
+    <main class="app-main">
+
+      <!-- ---------- 视图 1：首页 / 题型选择 ---------- -->
+      <section class="view-home" v-if="view === 'home'">
+        <div class="home-hero">
+          <h1 class="home-title">选择练习题型</h1>
+          <p class="home-desc">
+            客观题（单选 / 多选 / 判断）提交后即时机器判分；简答题提交后仅展示参考答案，不做机器判分。
+          </p>
+        </div>
+
+        <div class="type-cards">
+          <!-- 单选题卡片 -->
+          <article class="type-card" @click="switchType('single-choice')">
+            <div class="type-card-head">
+              <span class="type-badge badge-single">单选</span>
+              <span class="type-count">{{ counts['single-choice'] }} 题</span>
+            </div>
+            <h2 class="type-card-title">单选题</h2>
+            <p class="type-card-desc">从 A–D 中选出唯一正确答案，提交后即时判分。</p>
+            <div class="type-card-foot">
+              <span>已答 {{ progress['single-choice'].answered }} 题</span>
+              <span class="type-card-link">开始练习 →</span>
+            </div>
+          </article>
+
+          <!-- 多选题卡片 -->
+          <article class="type-card" @click="switchType('multiple-choice')">
+            <div class="type-card-head">
+              <span class="type-badge badge-multi">多选</span>
+              <span class="type-count">{{ counts['multiple-choice'] }} 题</span>
+            </div>
+            <h2 class="type-card-title">多选题</h2>
+            <p class="type-card-desc">选出全部正确选项，选项集合完全一致方可得满分。</p>
+            <div class="type-card-foot">
+              <span>已答 {{ progress['multiple-choice'].answered }} 题</span>
+              <span class="type-card-link">开始练习 →</span>
+            </div>
+          </article>
+
+          <!-- 判断题卡片 -->
+          <article class="type-card" @click="switchType('true-false')">
+            <div class="type-card-head">
+              <span class="type-badge badge-judge">判断</span>
+              <span class="type-count">{{ counts['true-false'] }} 题</span>
+            </div>
+            <h2 class="type-card-title">判断题</h2>
+            <p class="type-card-desc">判断命题正误，选择"正确 / 错误"后即时判分。</p>
+            <div class="type-card-foot">
+              <span>已答 {{ progress['true-false'].answered }} 题</span>
+              <span class="type-card-link">开始练习 →</span>
+            </div>
+          </article>
+
+          <!-- 简答题卡片 -->
+          <article class="type-card" @click="switchType('short-answer')">
+            <div class="type-card-head">
+              <span class="type-badge badge-short">简答</span>
+              <span class="type-count">{{ counts['short-answer'] }} 题</span>
+            </div>
+            <h2 class="type-card-title">简答题</h2>
+            <p class="type-card-desc">自述作答，提交后展开参考答案，供自我对照复盘。</p>
+            <div class="type-card-foot">
+              <span>已答 {{ progress['short-answer'].answered }} 题</span>
+              <span class="type-card-link">开始练习 →</span>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- ---------- 视图 2：答题页 ---------- -->
+      <section class="view-quiz" v-if="view === 'quiz'">
+        <div class="quiz-layout">
+
+          <!-- 左侧：题目面板 -->
+          <div class="question-panel">
+            <div class="question-meta">
+              <span class="question-type-tag">{{ typeLabel(currentType) }}</span>
+              <span class="question-category">{{ currentQuestion.category }}</span>
+            </div>
+
+            <h2 class="question-stem">{{ currentQuestion.stem }}</h2>
+
+            <!-- 单选 / 多选：选项列表 -->
+            <ul
+              class="option-list"
+              v-if="currentType === 'single-choice' || currentType === 'multiple-choice'"
+            >
+              <li
+                v-for="(opt, idx) in currentQuestion.options"
+                :key="idx"
+                class="option-item"
+                :class="optionClass(idx)"
+                @click="selectOption(idx)"
+              >
+                <span class="option-key">{{ optionKey(idx) }}</span>
+                <span class="option-text">{{ opt }}</span>
+                <span class="option-mark" v-if="showResult && isOptionCorrect(idx)">✓</span>
+                <span class="option-mark mark-wrong" v-if="showResult && isOptionWrong(idx)">✗</span>
+              </li>
+            </ul>
+
+            <!-- 判断题：正确 / 错误 -->
+            <div class="judge-options" v-if="currentType === 'true-false'">
+              <button
+                class="judge-btn"
+                :class="judgeClass(true)"
+                @click="selectJudge(true)"
+              >✓ 正确</button>
+              <button
+                class="judge-btn"
+                :class="judgeClass(false)"
+                @click="selectJudge(false)"
+              >✗ 错误</button>
+            </div>
+
+            <!-- 简答题：文本域 + 参考答案 -->
+            <div class="short-answer-block" v-if="currentType === 'short-answer'">
+              <label class="short-answer-label" for="shortAnswerInput">你的作答：</label>
+              <textarea
+                id="shortAnswerInput"
+                class="short-answer-input"
+                rows="6"
+                placeholder="请在此输入你的回答……"
+                v-model="userAnswer.shortAnswer"
+              ></textarea>
+
+              <div class="reference-answer" v-if="showResult">
+                <h3 class="reference-title">参考答案</h3>
+                <div class="reference-body" v-html="formatAnswer(currentQuestion.referenceAnswer)"></div>
+
+                <div class="reference-keywords" v-if="currentQuestion.keywords && currentQuestion.keywords.length">
+                  <span class="kw-label">关键词：</span>
+                  <span class="kw-chip" v-for="(kw, i) in currentQuestion.keywords" :key="i">{{ kw }}</span>
+                </div>
+
+                <div class="reference-points" v-if="currentQuestion.scoringPoints && currentQuestion.scoringPoints.length">
+                  <h4 class="points-title">评分要点</h4>
+                  <ul class="points-list">
+                    <li v-for="(p, i) in currentQuestion.scoringPoints" :key="i">{{ p }}</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <!-- 本题判定结果条 -->
+            <div class="feedback-bar" v-if="showResult && currentType !== 'short-answer'">
+              <span class="feedback-tag" :class="currentCorrect ? 'tag-correct' : 'tag-wrong'">
+                {{ currentCorrect ? '回答正确' : '回答错误' }}
+              </span>
+              <span class="feedback-answer" v-if="!currentCorrect">
+                正确答案：{{ currentQuestion.answerText || currentQuestion.answer }}
+              </span>
+            </div>
+          </div>
+
+          <!-- 右侧：答题卡 -->
+          <aside class="answer-sheet">
+            <div class="sheet-head">
+              <h3 class="sheet-title">答题卡</h3>
+              <span class="sheet-progress">{{ answeredCount }} / {{ currentList.length }}</span>
+            </div>
+            <div class="sheet-grid">
+              <button
+                v-for="(q, idx) in currentList"
+                :key="q.id"
+                class="sheet-cell"
+                :class="sheetCellClass(idx)"
+                @click="gotoQuestion(idx)"
+              >{{ idx + 1 }}</button>
+            </div>
+            <div class="sheet-legend">
+              <span><i class="dot dot-answered"></i>已答</span>
+              <span><i class="dot dot-correct"></i>正确</span>
+              <span><i class="dot dot-wrong"></i>错误</span>
+              <span><i class="dot dot-current"></i>当前</span>
+            </div>
+          </aside>
+        </div>
+
+        <!-- 底部操作栏 -->
+        <div class="quiz-actions">
+          <button class="btn-secondary" @click="prevQuestion" :disabled="currentIndex === 0">
+            ← 上一题
+          </button>
+
+          <button
+            class="btn-primary"
+            v-if="!showResult"
+            @click="submitCurrent"
+          >提交本题</button>
+
+          <button
+            class="btn-secondary"
+            v-if="showResult && currentIndex < currentList.length - 1"
+            @click="nextQuestion"
+          >下一题 →</button>
+
+          <button
+            class="btn-finish"
+            v-if="showResult && currentIndex === currentList.length - 1"
+            @click="finishQuiz"
+          >完成本套 · 查看成绩</button>
+
+          <button class="btn-ghost" @click="backHome">返回首页</button>
+        </div>
+      </section>
+
+      <!-- ---------- 视图 3：成绩结果 ---------- -->
+      <section class="view-result" v-if="view === 'result'">
+        <div class="result-card">
+          <span class="result-type-tag">{{ typeLabel(resultType) }}</span>
+          <div class="result-score">
+            <span class="score-num">{{ resultScore }}</span>
+            <span class="score-unit" v-if="resultType !== 'short-answer'">分</span>
+          </div>
+          <p class="result-summary">{{ resultSummaryText }}</p>
+
+          <div class="result-actions">
+            <button class="btn-primary" @click="restartType">再练一遍</button>
+            <button class="btn-secondary" @click="backHome">返回首页</button>
+          </div>
+        </div>
+
+        <!-- 错题回顾 -->
+        <div class="wrong-review" v-if="wrongList.length">
+          <h3 class="review-title">错题回顾（{{ wrongList.length }} 题）</h3>
+          <ul class="review-list">
+            <li class="review-item" v-for="(q, i) in wrongList" :key="q.id">
+              <span class="review-index">{{ i + 1 }}.</span>
+              <span class="review-stem">{{ q.stem }}</span>
+              <span class="review-answer">
+                正确答案：<strong>{{ q.answerText || q.answer }}</strong>
+              </span>
+            </li>
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <!-- ==================== 页脚 ==================== -->
+    <footer class="app-footer">
+      <span>DataQuiz · 本地刷题 · 答题记录保存在浏览器 localStorage</span>
+    </footer>
+  </div>
+
+  <!-- Vue3 CDN 全局构建 -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <!-- 应用逻辑（下一步编写） -->
+  <script src="./app.js"></script>
+</body>
+</html>
